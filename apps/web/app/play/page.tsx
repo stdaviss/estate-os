@@ -11,9 +11,8 @@
 
 import type { Metadata } from 'next'
 
-import { Button, EmptyState, Rule } from '@repo/ui'
+import { Rule } from '@repo/ui'
 
-import { ScheduleError } from '../schedule/components/schedule-error'
 import { WhichMix } from './components/which-mix'
 
 export const metadata: Metadata = {
@@ -42,25 +41,4 @@ export default function PlayPage() {
       <WhichMix />
     </main>
   )
-}
-
-/** Exported for the empty and failed states, so both read in the same voice. */
-export function PlayEmpty() {
-  return (
-    <EmptyState label="NOTHING TO PLAY">
-      <p className="font-body text-body text-chalk-dim">
-        There are no pairs in the catalogue yet. This needs two versions of one track, and the
-        first will arrive from someone sending us a mix.
-      </p>
-      <div className="mt-4">
-        <Button variant="primary" href="/submit">
-          <span className="font-data text-label uppercase tracking-label">send us a mix</span>
-        </Button>
-      </div>
-    </EmptyState>
-  )
-}
-
-export function PlayError({ message }: { message: string }) {
-  return <ScheduleError message={message} />
 }

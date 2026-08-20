@@ -13,8 +13,10 @@ import { cookies } from 'next/headers'
 
 import { Artwork, Button, Data, EmptyState, Pill, Rule } from '@repo/ui'
 
+import { NowOn } from '../schedule/components/now-on'
 import { ScheduleError } from '../schedule/components/schedule-error'
 import { fetchArchive, type EpisodeDetail } from '../schedule/lib/api'
+import { resolveNextEpisode } from '../schedule/lib/next-up'
 import { resolveViewerTimeZone, TIMEZONE_COOKIE } from '../schedule/lib/viewer-timezone'
 import { Tracklist } from './components/tracklist'
 
@@ -34,7 +36,10 @@ export default async function ArchivePage({ searchParams }: PageProps) {
   const cookieStore = await cookies()
   const { timeZone } = resolveViewerTimeZone(undefined, cookieStore.get(TIMEZONE_COOKIE)?.value)
 
-  const result = await fetchArchive(timeZone, params.cursor)
+  const [result, nextEpisode] = await Promise.all([
+    fetchArchive(timeZone, params.cursor),
+    resolveNextEpisode(timeZone),
+  ])
 
   return (
     <main className="mx-auto w-full max-w-content px-4 py-8 md:px-8">
@@ -45,6 +50,9 @@ export default async function ArchivePage({ searchParams }: PageProps) {
           played, and when. That is on purpose.
         </p>
       </header>
+
+      {/* The C6 module in the archive header: what you missed, and what you can still catch. */}
+      <NowOn nextEpisode={nextEpisode} variant="banner" />
 
       <Rule />
 

@@ -19,6 +19,7 @@ import { NowOn } from './components/now-on'
 import { ScheduleError } from './components/schedule-error'
 import { TimezoneNote } from './components/timezone-note'
 import { fetchSchedule } from './lib/api'
+import { selectNextEpisode } from './lib/next-up'
 import { resolveViewerTimeZone, STATION_TIMEZONE, TIMEZONE_COOKIE } from './lib/viewer-timezone'
 
 export const metadata: Metadata = {
@@ -54,15 +55,7 @@ export default async function SchedulePage({ searchParams }: PageProps) {
   }
 
   const schedule = result.data
-  const nextEpisode =
-    schedule.days
-      .flatMap((day) => day.episodes)
-      .find(
-        (episode) =>
-          episode.id !== schedule.live_episode_id &&
-          Date.parse(episode.starts_at) > Date.now() &&
-          episode.state !== 'expired',
-      ) ?? null
+  const nextEpisode = selectNextEpisode(schedule)
 
   return (
     <main className="mx-auto w-full max-w-content px-4 py-8 md:px-8">

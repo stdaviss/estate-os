@@ -8,6 +8,7 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 
 import { Artwork, Data, Rule, SectionHead } from '@repo/ui'
@@ -15,6 +16,8 @@ import { Artwork, Data, Rule, SectionHead } from '@repo/ui'
 import { NowOn } from '../../schedule/components/now-on'
 import { ScheduleError } from '../../schedule/components/schedule-error'
 import { fetchPost, type PostDetail } from '../../schedule/lib/api'
+import { resolveNextEpisode } from '../../schedule/lib/next-up'
+import { resolveViewerTimeZone, TIMEZONE_COOKIE } from '../../schedule/lib/viewer-timezone'
 import { PostBody } from '../lib/mdx'
 
 export const dynamic = 'force-dynamic'
@@ -32,7 +35,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PostPage({ params }: PageProps) {
   const { slug } = await params
-  const result = await fetchPost(slug)
+  const cookieStore = await cookies()
+  const { timeZone } = resolveViewerTimeZone(undefined, cookieStore.get(TIMEZONE_COOKIE)?.value)
+
+  // Fetched together: the sidebar is not worth serialising behind the article.
+  const [result, nextEpisode] = await Promise.all([fetchPost(slug), resolveNextEpisode(timeZone)])
 
   if (!result.ok) {
     if (result.error.code === 'not_found') notFound()
@@ -97,7 +104,7 @@ export default async function PostPage({ params }: PageProps) {
       </main>
 
       <aside className="lg:sticky lg:top-16 lg:self-start">
-        <NowOn nextEpisode={null} />
+        <NowOn nextEpisode={nextEpisode} />
       </aside>
     </div>
   )

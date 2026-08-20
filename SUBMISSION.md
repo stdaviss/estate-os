@@ -20,7 +20,7 @@ Read BLOCKER 1 first. It is the reason for every other gap in this document.
 
 ## 3. Files changed
 
-Every path below falls inside Agent C's write list in `05-AGENT-C-SCHEDULE-CULTURE.md`. Two directory trees (`apps/api/posts/**`, `apps/api/games/**`) are in that list but **not** in the ownership table in `00-FOUNDATION.md` §7; per `06-SUBMISSION-PROTOCOL.md` §3 that discrepancy is raised as BLOCKER 15 rather than assumed away. 71 files, 8,523 lines.
+Every path below falls inside Agent C's write list in `05-AGENT-C-SCHEDULE-CULTURE.md`. Two directory trees (`apps/api/posts/**`, `apps/api/games/**`) are in that list but **not** in the ownership table in `00-FOUNDATION.md` §7; per `06-SUBMISSION-PROTOCOL.md` §3 that discrepancy is raised as BLOCKER 15 rather than assumed away. 72 files, 8,547 lines.
 
 | Path | Change | Lines | Why |
 |---|---|---|---|
@@ -62,11 +62,12 @@ Every path below falls inside Agent C's write list in `05-AGENT-C-SCHEDULE-CULTU
 | `apps/api/games/lib/repository.ts` | added | 96 | Only tracks carrying rights are ever read. |
 | `apps/api/games/[slug]/route.ts` | added | 72 | Serves the pair — BLOCKER 12. |
 | `apps/api/games/[slug]/events/route.ts` | added | 99 | `POST /games/:slug/events`; rejects pairs not in the catalogue. |
-| `apps/web/app/schedule/page.tsx` | added | 121 | The listings. Not the homepage — BLOCKER 13. |
+| `apps/web/app/schedule/page.tsx` | added | 114 | The listings. Not the homepage — BLOCKER 13. |
 | `apps/web/app/schedule/loading.tsx` | added | 42 | Reserves row height so nothing shifts. No shimmer — not a permitted animation. |
 | `apps/web/app/schedule/error.tsx` | added | 38 | Segment boundary, so the shell and audio survive a listings failure. |
 | `apps/web/app/schedule/lib/api.ts` | added | 271 | Typed client returning failures as values, so every screen can show error + retry. |
 | `apps/web/app/schedule/lib/viewer-timezone.ts` | added | 48 | Query → cookie → station fallback, with the fallback always labelled. |
+| `apps/web/app/schedule/lib/next-up.ts` | added | 38 | One next-up selection, shared by the listings, the archive header and article sidebars. |
 | `apps/web/app/schedule/components/now-on.tsx` | added | 138 | **The shared C6 module.** Exported for other agents — see §4. |
 | `apps/web/app/schedule/components/episode-row.tsx` | added | 114 | One airing. The live row is the page's only sodium locus. |
 | `apps/web/app/schedule/components/day-group.tsx` | added | 55 | Day-grouped rows; empty days kept as designed rows. |
@@ -78,12 +79,12 @@ Every path below falls inside Agent C's write list in `05-AGENT-C-SCHEDULE-CULTU
 | `apps/web/app/schedule/[episodeId]/not-found.tsx` | added | 31 | Distinguishes "never existed" from "expired". |
 | `apps/web/app/schedule/alerts/page.tsx` | added | 43 | Alert settings. Wrong address pending BLOCKER 14. |
 | `apps/web/app/schedule/alerts/alert-list.tsx` | added | 181 | Per-row removal, optimistic with rollback. |
-| `apps/web/app/archive/page.tsx` | added | 173 | The absence stated once; no playback affordance anywhere. |
+| `apps/web/app/archive/page.tsx` | added | 181 | The absence stated once; no playback affordance anywhere. |
 | `apps/web/app/archive/components/tracklist.tsx` | added | 122 | The artefact: dense mono on hairline rules, nothing else. |
 | `apps/web/app/archive/loading.tsx` | added | 34 | Reserves the entry layout. |
 | `apps/web/app/archive/error.tsx` | added | 30 | Segment boundary. |
 | `apps/web/app/read/page.tsx` | added | 133 | Editorial listing; tagged pieces have no visual distinction. |
-| `apps/web/app/read/[slug]/page.tsx` | added | 147 | Article at `body-l`, related artists regardless of relationship. |
+| `apps/web/app/read/[slug]/page.tsx` | added | 154 | Article at `body-l`, related artists regardless of relationship. |
 | `apps/web/app/read/lib/mdx.tsx` | added | 68 | One component map for published pages. Import unresolved — BLOCKER 9. |
 | `apps/web/app/read/edit/page.tsx` | added | 49 | Staff editor shell, role checked server-side. |
 | `apps/web/app/read/edit/post-editor.tsx` | added | 188 | Textarea, live preview, publish toggle. |
@@ -91,7 +92,7 @@ Every path below falls inside Agent C's write list in `05-AGENT-C-SCHEDULE-CULTU
 | `apps/web/app/read/edit/lib/save.ts` | added | 43 | Save, returning field-scoped errors. |
 | `apps/web/app/read/edit/lib/staff.ts` | added | 21 | Adapter over Agent B's auth — BLOCKER 8. |
 | `apps/web/app/read/error.tsx` | added | 30 | Segment boundary. |
-| `apps/web/app/play/page.tsx` | added | 66 | The one game. |
+| `apps/web/app/play/page.tsx` | added | 44 | The one game. |
 | `apps/web/app/play/components/which-mix.tsx` | added | 362 | A/B play, vote, split; pauses and resumes the stream. |
 | `apps/web/app/play/lib/session-key.ts` | added | 28 | Random per-tab key; no fingerprint, no account link. |
 | `apps/web/app/play/error.tsx` | added | 35 | Segment boundary; a broken game says so. |
@@ -146,7 +147,9 @@ Agent C opens no socket. `NowOn` and the game read Agent A's context, and every 
 
 ### Shared export
 
-`NowOn` — `apps/web/app/schedule/components/now-on.tsx`. The §C6 module, built once for the schedule, the archive header and editorial sidebars. Other agents may import it. It takes a `nextEpisode` resolved on the server so first paint is correct, and reads live state from `BroadcastContext` itself.
+`NowOn` — `apps/web/app/schedule/components/now-on.tsx`. The §C6 module, built once and used in all three places the brief names: the schedule (as a banner), the archive header (as a banner) and the article sidebar (as a rail). Other agents may import it. It takes a `nextEpisode` resolved on the server so first paint is correct, and reads live state from `BroadcastContext` itself. Next-up selection lives in `lib/next-up.ts` and is shared with the listings, so the countdown and the listings cannot disagree about what is next.
+
+Also exported for reuse: `AlertList` (`apps/web/app/schedule/alerts/alert-list.tsx`), so Agent B can mount alert settings under `/account/alerts` unchanged once BLOCKER 14 is resolved; and `Tracklist` (`apps/web/app/archive/components/tracklist.tsx`), which carries no playback affordance by construction.
 
 ## 5. Design system adherence
 
@@ -195,7 +198,7 @@ The ten questions from `01-DESIGN-SYSTEM.md` §10. Every answer below is from re
 - **Where it sits:** `packages/schema`, `packages/ui`, `packages/types` are locked (`00-FOUNDATION.md` §8). The root and app-shell files are in no agent's ownership table. `apps/web/app/layout.tsx` and the transport are implicitly Agent A's.
 - **What the repository actually contained:** one file, `README.md`, holding the single line `# estate-os`. Nothing else. No `apps/`, no `packages/`, no root config, no git history beyond the initial commit.
 - **Proposed diff:** none from me, deliberately. `00-FOUNDATION.md` §8 says do not add it locally, do not work around it with a duplicate type, stop and file it. `06-SUBMISSION-PROTOCOL.md` §3 says `packages_locked_touched` must be `[]` or the submission is rejected and the change reverted. Authoring the locked packages myself would also have guaranteed a three-way collision, since Agents A and B were told the same thing and merge before me (§6: B → A → C). The correct fix is central: deliver the three locked packages and the root once, for all three agents.
-- **What I did instead:** wrote every module against the contracts as if the packages existed, and confined the unresolvable imports to eight files (four repositories, `consent.ts`, two auth adapters, one MDX adapter) so the blast radius is small and reviewable. Then split the lane so that everything *not* requiring those packages is genuinely tested: 140 passing tests over timezones, grouping, serialisation, ICS, alert matching, dedupe, tokens, copy, delivery and the game. I also parse-checked all 71 files with the TypeScript parser (0 syntax errors) since I cannot type-check them.
+- **What I did instead:** wrote every module against the contracts as if the packages existed, and confined the unresolvable imports to eight files (four repositories, `consent.ts`, two auth adapters, one MDX adapter) so the blast radius is small and reviewable. Then split the lane so that everything *not* requiring those packages is genuinely tested: 140 passing tests over timezones, grouping, serialisation, ICS, alert matching, dedupe, tokens, copy, delivery and the game. I also parse-checked all 72 files with the TypeScript parser (0 syntax errors) since I cannot type-check them.
 - **Correct once resolved, or needs rework?** Mixed, and I want to be exact rather than reassuring. The pure logic — roughly 1,900 lines plus 1,400 lines of tests — is correct now and will not need rework; it depends on nothing but Node. The four repositories need their table and column identifiers reconciled with the real schema; that is mechanical but it is real work, and every guess is listed in §8. The React components need every `@repo/ui` prop signature checked against the real primitives, and that is the part most likely to need genuine rework: I guessed at prop names (`tone`, `size`, `label`, `variant`, `onChange`) and at the Tailwind theme keys, and I have no way to know how close I am. Treat §5 and the component layer as unverified drafts; treat `apps/api/*/lib/*.ts` (excluding the repositories) as finished.
 
 ### 2. `GET /archive` has no owned path
@@ -437,7 +440,7 @@ Exhaustive, and flagged where I guessed.
 | `apps/api/alerts/lib/alerts.test.ts` (41) | unit | Exact, parent→child and rejected child→parent genre matching; host and guest matching; guest genres merged; lead-time computation including zero and negative; **one notification per person per episode** across genre+artist and across channels; earliest-send-time wins; determinism on ties; two people still both notified; due selection before/at/after trigger and past the grace window; already-sent suppression; consent required; timezone resolution stated/inferred/refused/malformed; copy in reader and station zones, guessed zones labelled, voice constraints, exactly one unsubscribe link; token round-trip, tampering, foreign secret, malformed input, weak-secret refusal, absolute URL; a delivery run sending once, not twice across runs, retrying after a transport failure, skipping no-consent, reporting a missing transport, and sending nothing when nothing is due. | Yes |
 | `apps/api/games/lib/which-mix.test.ts` (20) | unit | Version-suffix splitting across producer forms; non-versions left alone; whole-title protection; punctuation normalisation; pairing; refusal across artists, without a suffix, and for a lone version; adjacent rather than combinatorial pairing; determinism; empty catalogue; one vote per session; second vote ignored; percentages summing to 100; zero state; other pairs, games and event types ignored; stable pair selection; empty-list null; selection always in range; event-type allow-list. | Yes |
 | ICS cross-check with `node-ical` 0.20.1 | integration, one-off | Generated calendar parsed by an independent RFC 5545 implementation: 3 events recovered, correct UTC instants, correct Paris/Tokyo conversion, CET vs CEST across a winter and a summer episode, unescaped punctuation, unfolded lines, intact `étirée` and `東京`. | Yes |
-| TypeScript parse of all 71 files | static | Syntax only, no type resolution (types cannot resolve — BLOCKER 1). 0 syntax errors. | Yes |
+| TypeScript parse of all 72 files | static | Syntax only, no type resolution (types cannot resolve — BLOCKER 1). 0 syntax errors. | Yes |
 | Copy audit | static | No `unfortunately\|sorry\|apolog\|oops\|whoops` and none of the seven banned marketing words in any user-facing string; no exclamation marks; no `console.*`; no `any`; no `eslint-disable`, `@ts-ignore` or `@ts-expect-error`; no hex colours outside the one documented file. | Yes |
 | **Type check** | — | Not run. Impossible — BLOCKER 1. | **No** |
 | **Lint** | — | Not run. No ESLint config exists in the repository. | **No** |
