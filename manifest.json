@@ -1,0 +1,109 @@
+{
+  "agent": "C",
+  "milestone": "phase-1",
+  "status": "PARTIAL",
+  "paths_written": [
+    "apps/api/schedule/**",
+    "apps/api/alerts/**",
+    "apps/api/posts/**",
+    "apps/api/games/**",
+    "apps/web/app/schedule/**",
+    "apps/web/app/archive/**",
+    "apps/web/app/read/**",
+    "apps/web/app/play/**",
+    "SUBMISSION.md",
+    "manifest.json"
+  ],
+  "endpoints_implemented": [
+    { "method": "GET", "path": "/api/v1/schedule" },
+    { "method": "GET", "path": "/api/v1/schedule/:episodeId" },
+    { "method": "GET", "path": "/api/v1/schedule/archive", "contract_path": "/api/v1/archive", "deviation": "blocker-2" },
+    { "method": "GET", "path": "/api/v1/schedule/ics/:showSlug", "deviation": "blocker-7" },
+    { "method": "GET", "path": "/api/v1/alerts" },
+    { "method": "POST", "path": "/api/v1/alerts" },
+    { "method": "DELETE", "path": "/api/v1/alerts/:id" },
+    { "method": "GET", "path": "/api/v1/alerts/unsubscribe", "deviation": "blocker-7" },
+    { "method": "POST", "path": "/api/v1/alerts/unsubscribe", "deviation": "blocker-7" },
+    { "method": "POST", "path": "/api/v1/alerts/deliver", "deviation": "blocker-7" },
+    { "method": "GET", "path": "/api/v1/posts" },
+    { "method": "POST", "path": "/api/v1/posts", "deviation": "blocker-11" },
+    { "method": "GET", "path": "/api/v1/posts/:slug" },
+    { "method": "GET", "path": "/api/v1/games/:slug", "deviation": "blocker-12" },
+    { "method": "POST", "path": "/api/v1/games/:slug/events" }
+  ],
+  "endpoints_consumed": [
+    { "method": "GET", "path": "/api/v1/stream/now", "owner": "A", "mocked": false, "note": "consumed indirectly through BroadcastContext; never called directly" },
+    { "method": "GET", "path": "/api/v1/catalogue", "owner": "B", "mocked": false, "note": "not used; the game reads tracks through its own repository, see blocker-12" },
+    { "method": "GET", "path": "/api/v1/artists/:slug", "owner": "B", "mocked": false, "note": "linked to by href only; no data fetched" }
+  ],
+  "events_emitted": [],
+  "events_consumed": [
+    "show.started",
+    "show.ended",
+    "track.changed",
+    "listeners.updated"
+  ],
+  "events_consumed_note": "All four are read indirectly through Agent A's BroadcastContext. Agent C opens no WebSocket and every page works without one, because the schedule is fetched over HTTP.",
+  "exports_shared": [
+    { "name": "NowOn", "from": "apps/web/app/schedule/components/now-on.tsx", "note": "the 05-AGENT-C C6 what's-on-now module; built once for the schedule, archive header and editorial sidebars" },
+    { "name": "AlertList", "from": "apps/web/app/schedule/alerts/alert-list.tsx", "note": "so Agent B can mount alert settings at /account/alerts unchanged, see blocker-14" },
+    { "name": "Tracklist", "from": "apps/web/app/archive/components/tracklist.tsx", "note": "reusable, and carries no playback affordance by construction" }
+  ],
+  "packages_locked_touched": [],
+  "blockers": [
+    { "id": 1, "summary": "packages/schema, packages/ui, packages/types, the monorepo root and both app shells do not exist in the repository; the branch does not compile, run or render, and no screen could be screenshotted", "file": "packages/schema, packages/ui, packages/types, repository root, apps/web, apps/api", "severity": "critical" },
+    { "id": 2, "summary": "GET /archive has no owned path; 00-FOUNDATION §7 assigns apps/api/archive/** to nobody, so the handler is mounted at /api/v1/schedule/archive", "file": "docs/00-FOUNDATION.md §7", "severity": "high" },
+    { "id": 3, "summary": "no alert_deliveries table, so notification dedupe cannot be persisted; the delivery log is in-memory and a restart or second instance can double-send", "file": "packages/schema (02-CONTRACTS.md §1)", "severity": "high" },
+    { "id": 4, "summary": "no shared home for the response envelope or display formatters; the envelope sits in apps/api/schedule/lib/http.ts and formatCountdown is duplicated in the web layer", "file": "apps/api/_lib or packages/types", "severity": "medium" },
+    { "id": 5, "summary": "users has no timezone column, so a notification cannot reliably state the start time in the recipient's own zone", "file": "packages/schema (02-CONTRACTS.md §1)", "severity": "medium" },
+    { "id": 6, "summary": "tracks has no variant relation or version label, so Which mix? infers pairs from version suffixes in titles", "file": "packages/schema (02-CONTRACTS.md §1)", "severity": "medium" },
+    { "id": 7, "summary": "the ICS feed, the no-login unsubscribe and the delivery tick are required by 05-AGENT-C but absent from the API contract", "file": "docs/02-CONTRACTS.md §2", "severity": "medium" },
+    { "id": 8, "summary": "Agent A's BroadcastContext path and shape, and Agent B's auth() module, are guesses; imports are written unresolved rather than mocked", "file": "apps/web/components/player/context, @repo/auth", "severity": "high" },
+    { "id": 9, "summary": "cannot add next-mdx-remote because apps/web/package.json is not owned and does not exist", "file": "apps/web/package.json", "severity": "medium" },
+    { "id": 10, "summary": "no table for web push subscription endpoint and keys, so the web_push channel the contract permits cannot be delivered to", "file": "packages/schema (02-CONTRACTS.md §1)", "severity": "medium" },
+    { "id": 11, "summary": "the staff editor required by C4 cannot save; the contract lists only the two post read endpoints", "file": "docs/02-CONTRACTS.md §2", "severity": "medium" },
+    { "id": 12, "summary": "no contract endpoint for reading a game pair; only POST /games/:slug/events is specified", "file": "docs/02-CONTRACTS.md §2", "severity": "low" },
+    { "id": 13, "summary": "the schedule cannot be the homepage; apps/web/app/page.tsx and next.config are not owned by Agent C", "file": "apps/web/app/page.tsx", "severity": "high" },
+    { "id": 14, "summary": "alert settings has no owned address; app/(account)/** belongs to Agent B, so it is mounted at /schedule/alerts", "file": "apps/web/app/(account)/alerts", "severity": "low" },
+    { "id": 15, "summary": "apps/api/posts/** and apps/api/games/** are in Agent C's write list in 05-AGENT-C but not in the ownership table in 00-FOUNDATION §7", "file": "docs/00-FOUNDATION.md §7", "severity": "low" }
+  ],
+  "env_vars_added": [
+    "NEXT_PUBLIC_SITE_URL",
+    "NEXT_PUBLIC_API_URL",
+    "ALERTS_UNSUBSCRIBE_SECRET",
+    "ALERTS_CRON_SECRET",
+    "ALERTS_EMAIL_ENDPOINT",
+    "ALERTS_EMAIL_API_KEY",
+    "ALERTS_EMAIL_FROM"
+  ],
+  "env_vars_note": "Could not be written to .env.example: that file is repository-root shared infrastructure and is not in Agent C's ownership table. Every variable is documented in SUBMISSION.md §8.",
+  "dependencies_added": [
+    "next-mdx-remote@^5"
+  ],
+  "dependencies_note": "Declared, not installed. apps/web/package.json is not owned by Agent C and does not exist; see blocker-9. No dependency was added for mail (the transport uses fetch) or for iCalendar (written by hand against RFC 5545).",
+  "screens": [
+    { "route": "/schedule", "seeded": null, "empty": null, "mobile": null },
+    { "route": "/schedule/:episodeId", "seeded": null, "empty": null, "mobile": null },
+    { "route": "/schedule/alerts", "seeded": null, "empty": null, "mobile": null },
+    { "route": "/archive", "seeded": null, "empty": null, "mobile": null },
+    { "route": "/read", "seeded": null, "empty": null, "mobile": null },
+    { "route": "/read/:slug", "seeded": null, "empty": null, "mobile": null },
+    { "route": "/read/edit", "seeded": null, "empty": null, "mobile": null },
+    { "route": "/play", "seeded": null, "empty": null, "mobile": null }
+  ],
+  "screens_note": "No screenshots exist. There is no app shell, no packages/ui, no seed and no dev server, so no screen has been rendered in either seed mode. Per 06-SUBMISSION-PROTOCOL §6, none of these screens are delivered.",
+  "tests": {
+    "files": 6,
+    "passing": 140,
+    "failing": 0,
+    "command": "npx vitest run --root /workspace --include 'apps/api/**/*.test.ts'",
+    "pnpm_test": "fails: ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND, no root package.json exists",
+    "type_check": "not run, impossible; see blocker-1",
+    "lint": "not run, no ESLint config exists in the repository",
+    "e2e": "not written, there is no application to drive"
+  },
+  "no_personalised_ordering": {
+    "asserted": true,
+    "how": "No sort, filter or grouping function in the lane accepts a user identifier. GET /schedule reads no session and takes only a date range and a timezone. Ordering is a pure function of starts_at with an id tie-break, asserted by three tests in apps/api/schedule/lib/schedule.test.ts. listening_sessions is never read; game_events is read only to compute a public vote split identical for every viewer."
+  }
+}
