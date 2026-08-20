@@ -1,0 +1,62 @@
+{
+  "agent": "C",
+  "milestone": "phase-1",
+  "status": "PARTIAL",
+  "paths_written": [
+    "apps/web/app/schedule/**",
+    "apps/web/app/archive/**",
+    "apps/web/app/read/**",
+    "apps/web/app/play/**",
+    "apps/api/schedule/**",
+    "apps/api/alerts/**",
+    "apps/api/posts/**",
+    "apps/api/games/**",
+    "docs/screenshots/**",
+    "docs/adr/agent-c-no-personalised-ordering.md",
+    "SUBMISSION.md",
+    "manifest.json"
+  ],
+  "endpoints_implemented": [
+    { "method": "GET", "path": "/api/v1/schedule" },
+    { "method": "GET", "path": "/api/v1/schedule/:episodeId" },
+    { "method": "GET", "path": "/api/v1/archive" },
+    { "method": "GET", "path": "/api/v1/alerts" },
+    { "method": "POST", "path": "/api/v1/alerts" },
+    { "method": "DELETE", "path": "/api/v1/alerts" },
+    { "method": "GET", "path": "/api/v1/posts" },
+    { "method": "GET", "path": "/api/v1/posts/:slug" },
+    { "method": "POST", "path": "/api/v1/games/:slug/events" }
+  ],
+  "endpoints_consumed": [
+    { "method": "GET", "path": "/api/v1/stream/now", "owner": "A", "mocked": true },
+    { "method": "GET", "path": "/api/v1/catalogue", "owner": "B", "mocked": true },
+    { "method": "GET", "path": "/api/v1/artists/:slug", "owner": "B", "mocked": true }
+  ],
+  "events_emitted": [],
+  "events_consumed": [],
+  "exports_shared": [
+    { "name": "WhatsOnNow", "from": "apps/web/app/schedule/_lib/whats-on-now.tsx" },
+    { "name": "useBroadcast", "from": "apps/web/app/schedule/_lib/broadcast.ts" }
+  ],
+  "packages_locked_touched": [],
+  "blockers": [
+    { "id": 1, "summary": "packages/schema, packages/ui, packages/types are not in the repo", "file": "packages/schema/index.ts", "severity": "high" },
+    { "id": 2, "summary": "No Next.js/API/Turborepo shell to mount C routes or redirect / to /schedule", "file": "apps/web/app/layout.tsx", "severity": "high" },
+    { "id": 3, "summary": "posts has no tags column but GET /posts?tag= is specified", "file": "packages/schema/index.ts", "severity": "medium" },
+    { "id": 4, "summary": "No alert_deliveries table for durable per-user per-episode dedupe", "file": "packages/schema/index.ts", "severity": "high" },
+    { "id": 5, "summary": "BroadcastContext, Auth.js session, and Agent B seed are absent", "file": "apps/web/components/player/context.tsx", "severity": "high" },
+    { "id": 6, "summary": "Alert dispatch needs a cron in infra (Agent A)", "file": "infra", "severity": "medium" }
+  ],
+  "env_vars_added": ["ALERT_UNSUB_SECRET", "SMTP_URL", "EMPTY"],
+  "dependencies_added": [],
+  "screens": [
+    { "route": "/schedule", "seeded": "docs/screenshots/c-schedule.png", "empty": "docs/screenshots/c-schedule-empty.png", "mobile": "docs/screenshots/c-schedule-360.png" },
+    { "route": "/schedule/alerts", "seeded": "docs/screenshots/c-alerts.png", "empty": "docs/screenshots/c-alerts-empty.png", "mobile": "docs/screenshots/c-alerts-360.png" },
+    { "route": "/archive", "seeded": "docs/screenshots/c-archive.png", "empty": "docs/screenshots/c-archive-empty.png", "mobile": "docs/screenshots/c-archive-360.png" },
+    { "route": "/archive/:id", "seeded": "docs/screenshots/c-archive-episode.png", "empty": "docs/screenshots/c-archive-episode-empty.png", "mobile": "docs/screenshots/c-archive-episode-360.png" },
+    { "route": "/read", "seeded": "docs/screenshots/c-read.png", "empty": "docs/screenshots/c-read-empty.png", "mobile": "docs/screenshots/c-read-360.png" },
+    { "route": "/read/:slug", "seeded": "docs/screenshots/c-read-article.png", "empty": "docs/screenshots/c-read-article-empty.png", "mobile": "docs/screenshots/c-read-article-360.png" },
+    { "route": "/read/editor", "seeded": "docs/screenshots/c-editor.png", "empty": "docs/screenshots/c-editor-empty.png", "mobile": "docs/screenshots/c-editor-360.png" },
+    { "route": "/play", "seeded": "docs/screenshots/c-play.png", "empty": "docs/screenshots/c-play-empty.png", "mobile": "docs/screenshots/c-play-360.png" }
+  ]
+}
