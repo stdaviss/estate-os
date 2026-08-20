@@ -5,17 +5,23 @@
  * them (00-FOUNDATION.md §4). No audio url appears in this response in any state.
  */
 
-import { fail, ok } from '../lib/http'
+import { fail, ok, readTimeZone } from '../lib/http'
 import { getEpisodeById, getGenreIndex, getTracklist } from '../lib/repository'
 import { assertNoPrivateFields, serializeEpisode, serializeTracklist } from '../lib/serialize'
+import { STATION_TIMEZONE } from '../lib/time'
 import { isExpired, isOnAir } from '../lib/view-models'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ episodeId: string }> },
 ): Promise<Response> {
+  const { timeZone, invalid } = readTimeZone(new URL(request.url), STATION_TIMEZONE)
+  if (invalid) {
+    return fail('bad_request', 'Unknown timezone. Use an IANA name such as Europe/Paris.', 'tz')
+  }
+
   const { episodeId } = await context.params
   if (!UUID.test(episodeId)) {
     return fail('bad_request', 'That is not an episode id.', 'episodeId')
@@ -33,7 +39,7 @@ export async function GET(
   ])
 
   const payload = {
-    episode: serializeEpisode(episode, genreIndex),
+    episode: serializeEpisode(episode, genreIndex, timeZone),
     tracklist: serializeTracklist(tracklist),
     /** Stated explicitly so a client never has to infer it from a missing field. */
     recording_available: false,

@@ -64,7 +64,7 @@ export async function GET(request: Request): Promise<Response> {
       stamp: formatDayKeyStamp(day.dayKey),
       is_today: day.isToday,
       is_past: day.isPast,
-      episodes: day.episodes.map((episode) => serializeEpisode(episode, genreIndex)),
+      episodes: day.episodes.map((episode) => serializeEpisode(episode, genreIndex, timeZone)),
     })),
   }
 

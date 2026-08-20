@@ -7,7 +7,14 @@
  * make that enforceable rather than a matter of review attention.
  */
 
-import { formatClock, formatDateStamp, formatDurationClock, STATION_TIMEZONE } from './time'
+import {
+  formatClock,
+  formatDateStamp,
+  formatDurationClock,
+  formatOffsetLabel,
+  localDayShift,
+  STATION_TIMEZONE,
+} from './time'
 import {
   episodeDurationMs,
   episodeTitle,
@@ -67,10 +74,23 @@ export interface PublicEpisode {
   expired_at: string | null
   /** Always false for an expired episode. There is no public recording, ever. */
   is_playable: boolean
+  /**
+   * Pre-rendered strings in both the viewer's zone and the station's.
+   *
+   * Formatting happens here rather than in the browser so there is one implementation of
+   * the design system's time and date forms, and so a server-rendered page shows the right
+   * times on first paint instead of correcting itself after hydration.
+   */
   display: {
-    /** Station-local rendering, so a response is useful without a client timezone. */
+    local_time: string
+    local_date: string
+    local_offset: string
+    local_timezone: string
+    /** `1` when this airs on the following day for the viewer, `-1` the previous. */
+    local_day_shift: number
     station_time: string
     station_date: string
+    station_offset: string
     station_timezone: string
     duration: string
   }
@@ -112,6 +132,7 @@ function serializeShow(show: ShowRef, genreIndex: Map<string, GenreRef>): Public
 export function serializeEpisode(
   episode: ScheduleEpisode,
   genreIndex: Map<string, GenreRef> = new Map(),
+  viewerTimeZone: string = STATION_TIMEZONE,
 ): PublicEpisode {
   return {
     id: episode.id,
@@ -127,8 +148,14 @@ export function serializeEpisode(
     expired_at: episode.expiredAt?.toISOString() ?? null,
     is_playable: isOnAir(episode) && !isExpired(episode),
     display: {
+      local_time: formatClock(episode.startsAt, viewerTimeZone),
+      local_date: formatDateStamp(episode.startsAt, viewerTimeZone),
+      local_offset: formatOffsetLabel(episode.startsAt, viewerTimeZone),
+      local_timezone: viewerTimeZone,
+      local_day_shift: localDayShift(episode.startsAt, viewerTimeZone, STATION_TIMEZONE),
       station_time: formatClock(episode.startsAt, STATION_TIMEZONE),
       station_date: formatDateStamp(episode.startsAt, STATION_TIMEZONE),
+      station_offset: formatOffsetLabel(episode.startsAt, STATION_TIMEZONE),
       station_timezone: STATION_TIMEZONE,
       duration: formatDurationClock(episodeDurationMs(episode)),
     },

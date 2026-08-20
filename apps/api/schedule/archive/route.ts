@@ -10,13 +10,18 @@
  * no signed manifest — the recording is gone, and the tracklist is what is left.
  */
 
-import { decodeCursor, encodeCursor, fail, ok, readPagination } from '../lib/http'
+import { decodeCursor, encodeCursor, fail, ok, readPagination, readTimeZone } from '../lib/http'
 import { getGenreIndex, getTracklist, listExpiredEpisodes } from '../lib/repository'
 import { assertNoPrivateFields, serializeEpisode, serializeTracklist } from '../lib/serialize'
+import { STATION_TIMEZONE } from '../lib/time'
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url)
   const { limit, cursor } = readPagination(url)
+  const { timeZone, invalid } = readTimeZone(url, STATION_TIMEZONE)
+  if (invalid) {
+    return fail('bad_request', 'Unknown timezone. Use an IANA name such as Europe/Paris.', 'tz')
+  }
 
   const decoded = cursor ? decodeCursor(cursor) : null
   if (cursor && !decoded) {
@@ -33,7 +38,7 @@ export async function GET(request: Request): Promise<Response> {
   const tracklists = await Promise.all(page.episodes.map((episode) => getTracklist(episode.id)))
 
   const payload = page.episodes.map((episode, index) => ({
-    episode: serializeEpisode(episode, genreIndex),
+    episode: serializeEpisode(episode, genreIndex, timeZone),
     tracklist: serializeTracklist(tracklists[index]),
     recording_available: false,
   }))

@@ -85,6 +85,32 @@ describe('episode serialisation', () => {
     expect(payload.display.station_timezone).toBe('Europe/Paris')
   })
 
+  it('renders the viewer zone alongside the station zone', () => {
+    const payload = serializeEpisode(expired, new Map(), 'Asia/Tokyo')
+    expect(payload.display.local_time).toBe('06:00')
+    expect(payload.display.local_date).toBe('2026.08.15')
+    expect(payload.display.local_offset).toBe('UTC+09:00')
+    expect(payload.display.local_day_shift).toBe(1)
+    // The station values are unchanged, so a listing can show both.
+    expect(payload.display.station_time).toBe('23:00')
+    expect(payload.display.station_offset).toBe('UTC+02:00')
+  })
+
+  it('defaults the viewer zone to the station zone with no day shift', () => {
+    const payload = serializeEpisode(expired)
+    expect(payload.display.local_time).toBe(payload.display.station_time)
+    expect(payload.display.local_day_shift).toBe(0)
+  })
+
+  it('reports a negative shift for a viewer west of the date boundary', () => {
+    const payload = serializeEpisode(
+      { ...expired, startsAt: new Date('2026-08-14T00:30:00.000Z') },
+      new Map(),
+      'America/Los_Angeles',
+    )
+    expect(payload.display.local_day_shift).toBe(-1)
+  })
+
   it('resolves a nested genre to its parent slug', () => {
     const index = new Map([['g-1', { id: 'g-1', slug: 'techno', name: 'Techno', parentId: null }]])
     expect(serializeEpisode(expired, index).show.genres[0].parent_slug).toBe('techno')
